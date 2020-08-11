@@ -1,6 +1,6 @@
 #include <IRremote.h>
 IRrecv irrecv(4);
-decode_results codigo;
+decode_results code;
 
 int echo = 3;
 int trig = 2;
@@ -11,6 +11,7 @@ int lightBack = 6;
 
 bool found = false;
 
+//Función para trabajar los 2 motores
 void motorMode(int pin,int pin2, bool state){
     if(state == false){
         digitalWrite(pin, LOW);
@@ -35,11 +36,14 @@ void setup(){
     pinMode(A3, OUTPUT);
 
     Serial.begin(9600);
-    irrecv.enableIRIn(); // INICIA LA RECEPCIÓN
+    irrecv.enableIRIn();
 
 }
 
 void loop(){
+
+    //Detección del sensor ultrasónico
+    
     long distance;
     long duration;
 
@@ -53,9 +57,17 @@ void loop(){
     duration = pulseIn(echo, HIGH);
     duration = duration / 2;
     distance = duration / 29;
-    if (irrecv.decode(&codigo)){
-    Serial.println(codigo.value, HEX);
+    
+    //----------------------------------
+
+
+ 
+    //Detencción del receptor inflarrojo
+    
+    if (irrecv.decode(&code)){
+    
       if(codigo.value == 0xE0E040BF){
+          //arranca con 500 segundos hacia adelante para buscar
           on = true;    
           motorMode(A0,A1, true);
           motorMode(A2,A3, true);
@@ -64,31 +76,41 @@ void loop(){
 
       if(codigo.value == 0xE4CD1208){
           on = false;   
-        }
-     irrecv.resume();
+      }
+      
+      irrecv.resume();
     }
+    
+    //----------------------------
 
+    
     if(on == true){
-      Serial.println(distance);
+
+     
       if(distance <= 20 && distance > 0){
+        //si el sensor ultrasónico encuentra algo
         found = true;
       } 
       else if(digitalRead(lightFront) == LOW && digitalRead(lightBack) == HIGH){
+            //se sale por delante
             motorMode(A1,A0, true);
             motorMode(A3,A2, true);
             found = false;
             delay(500);
-          } 
+      } 
       else if(digitalRead(lightBack) == LOW && digitalRead(lightFront) == HIGH){
+            //se sale por atras
             motorMode(A0,A1, true);
             motorMode(A3,A2, true);
             found = false;
             delay(500);
-       }
-     else if (digitalRead(lightBack) == LOW && digitalRead(lightFront) == LOW){
+      }
+      else if (digitalRead(lightBack) == LOW && digitalRead(lightFront) == LOW){
+        //se sale por los dos lados
         on = false; 
       }
       else {
+        //estado normal al buscar
         motorMode(A0, A1, true);
         motorMode(A2, A3, false);
       }
@@ -96,11 +118,10 @@ void loop(){
     if(found == true){
             motorMode(A0,A1, true);
             motorMode(A2,A3, true);
-     }
-    } else {
+    }
+     
+   } else {
       motorMode(A0, A1, false);
       motorMode(A2, A3, false);
     }
-
-   
 }
